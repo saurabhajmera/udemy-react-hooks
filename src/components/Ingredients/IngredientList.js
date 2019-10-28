@@ -3,6 +3,8 @@ import React from 'react';
 import './IngredientList.css';
 
 const IngredientList = props => {
+
+    console.log(JSON.stringify(props.ingredients));
   return (
     <section className="ingredient-list">
       <h2>Loaded Ingredients</h2>
