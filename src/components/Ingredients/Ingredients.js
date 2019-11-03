@@ -1,13 +1,33 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, {useEffect, useState, useCallback, useReducer} from 'react';
 
 import IngredientForm from './IngredientForm';
 import Search from './Search';
 import IngredientList from "./IngredientList";
 import ErrorModal from "../UI/ErrorModal";
 
-const Ingredients = () => {
+const ingredientReducer = (currentIngredients, action) => {
 
-    const [ingredients, updateIngredients] = useState([]);
+    switch (action.type) {
+        case 'SET':
+            return [...action.ingredients];
+            break;
+        case 'ADD':
+            return [...currentIngredients,action.ingredient];
+            break;
+        case 'DELETE':
+            return currentIngredients.filter(item=>(item.id !== action.id));
+            break;
+        default:
+            throw new Error('Invalid action type');
+
+    }
+
+};
+
+const Ingredients = () => {
+    const [ingredients, dispatch] = useReducer(ingredientReducer,[]);
+
+    // const [ingredients, updateIngredients] = useState([]);
     const [isLoading, updateIsLoading] = useState(false);
     const [error, updateErrorMessage] = useState(null);
 
@@ -26,7 +46,7 @@ const Ingredients = () => {
                     })
                 }
 
-                updateIngredients(ingredientsList);
+                dispatch({type:'SET',ingredients:ingredientsList});
 
 
             }).catch(error=>{
@@ -49,10 +69,11 @@ const Ingredients = () => {
             updateIsLoading(false);
             return response.json();
         }).then(responseData => {
-            updateIngredients((prevIngredients)=>{
-                const newIngredients = [...prevIngredients, {id:responseData.name,...ingredient}];
-                return newIngredients;
-            })
+            dispatch({type:'ADD',ingredient:{id:responseData.name,...ingredient}});
+            // (prevIngredients)=>{
+            //     const newIngredients = [...prevIngredients, {id:responseData.name,...ingredient}];
+            //     return newIngredients;
+            // })
         }).catch(error=>{
             updateErrorMessage(error.message);
             updateIsLoading(false);
@@ -65,22 +86,23 @@ const Ingredients = () => {
             method: 'DELETE',
             headers: {'Content-Type': 'application/json'}
         }).then(response => {
-            updateIngredients((currentIngredients) => {
-                const newIngredients = currentIngredients.filter(item=>{
-                    return item.id !== ingredientId;
-                });
-
-                return newIngredients;
-            })
+            dispatch({type:'DELETE', id:ingredientId});
+            // updateIngredients((currentIngredients) => {
+            //     const newIngredients = currentIngredients.filter(item=>{
+            //         return item.id !== ingredientId;
+            //     });
+            //
+            //     return newIngredients;
+            // })
         });
 
 
     };
 
     const filterIngredientsHandler = useCallback((updatedIngredientList) => {
-        updateIngredients(updatedIngredientList);
+        dispatch({type:'SET',ingredients:updatedIngredientList});
 
-    },[updateIngredients]);
+    },[]);
 
     const closeErrorModal = () => {
         updateErrorMessage(null);
