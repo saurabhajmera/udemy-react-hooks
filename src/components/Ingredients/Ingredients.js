@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback, useReducer} from 'react';
+import React, {useEffect, useCallback, useReducer} from 'react';
 
 import IngredientForm from './IngredientForm';
 import Search from './Search';
@@ -10,13 +10,10 @@ const ingredientReducer = (currentIngredients, action) => {
     switch (action.type) {
         case 'SET':
             return [...action.ingredients];
-            break;
         case 'ADD':
             return [...currentIngredients,action.ingredient];
-            break;
         case 'DELETE':
             return currentIngredients.filter(item=>(item.id !== action.id));
-            break;
         default:
             throw new Error('Invalid action type');
 
@@ -24,19 +21,36 @@ const ingredientReducer = (currentIngredients, action) => {
 
 };
 
+const httpReducer = (currentHttpReducer, action) => {
+    switch (action.type) {
+        case 'GET':
+        case 'POST':
+            return {isLoading:true, error:null};
+        case 'RESPONSE':
+            return {isLoading: false, error: null};
+        case 'ERROR':
+            return {isLoading: false, error: action.error};
+        default:
+            throw new Error("Invalid action type for httpReducer");
+
+    }
+
+};
+
 const Ingredients = () => {
     const [ingredients, dispatch] = useReducer(ingredientReducer,[]);
+    const [httpState, httpDispatch] = useReducer(httpReducer,{isLoading:false, error:null});
 
     // const [ingredients, updateIngredients] = useState([]);
-    const [isLoading, updateIsLoading] = useState(false);
-    const [error, updateErrorMessage] = useState(null);
+    // const [isLoading, updateIsLoading] = useState(false);
+    // const [error, updateErrorMessage] = useState(null);
 
 
     useEffect(() => {
-        updateIsLoading(true);
+        httpDispatch({type:'GET'});
         setTimeout(()=>{
             fetch("https://react-hooks-update-5d22d.firebaseio.com/ingredients.json").then(response => response.json()).then(responseData => {
-                updateIsLoading(false);
+                httpDispatch({type:'RESPONSE'});
                 const ingredientsList = [];
                 for(const key in responseData){
                     ingredientsList.push({
@@ -50,8 +64,9 @@ const Ingredients = () => {
 
 
             }).catch(error=>{
-                updateErrorMessage("An IO Error occurred");
-                updateIsLoading(false);
+                httpDispatch({type:'ERROR',error:"An IO Error occurred"});
+                // updateErrorMessage("An IO Error occurred");
+                // updateIsLoading(false);
 
             })
         },1000);
@@ -59,14 +74,16 @@ const Ingredients = () => {
     }, []);
 
     const addIngredientsHandler = (ingredient) => {
-        updateIsLoading(true);
+        // updateIsLoading(true);
+        httpDispatch({type:'POST'});
 
         fetch("https://react-hooks-update-5d22d.firebaseio.com/ingredients.json",{
             method: 'POST',
             body: JSON.stringify(ingredient),
             headers: {'Content-Type': 'application/json'}
         }).then(response => {
-            updateIsLoading(false);
+            // updateIsLoading(false);
+            httpDispatch({type:'RESPONSE'})
             return response.json();
         }).then(responseData => {
             dispatch({type:'ADD',ingredient:{id:responseData.name,...ingredient}});
@@ -75,8 +92,10 @@ const Ingredients = () => {
             //     return newIngredients;
             // })
         }).catch(error=>{
-            updateErrorMessage(error.message);
-            updateIsLoading(false);
+            // updateErrorMessage();
+            // updateIsLoading(false);
+            httpDispatch({type:'ERROR',error:error.message});
+
 
         });
     };
@@ -105,13 +124,14 @@ const Ingredients = () => {
     },[]);
 
     const closeErrorModal = () => {
-        updateErrorMessage(null);
+        // updateErrorMessage(null);
+        httpDispatch({type:'ERROR', error:null});
     };
 
   return (
     <div className="App">
-        {error && <ErrorModal onClose={closeErrorModal}>{error}</ErrorModal>}
-      <IngredientForm addIngredientsEventHandler={addIngredientsHandler} isLoading={isLoading}/>
+        {httpState.error && <ErrorModal onClose={closeErrorModal}>{httpState.error}</ErrorModal>}
+      <IngredientForm addIngredientsEventHandler={addIngredientsHandler} isLoading={httpState.isLoading}/>
 
       <section>
         <Search filterIngredientsHandler={filterIngredientsHandler}/>
