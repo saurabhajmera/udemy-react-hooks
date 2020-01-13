@@ -30,10 +30,8 @@ export const useHttp = () => {
             body: body && JSON.stringify(body),
             headers: {'Content-Type': 'application/json'}
         }).then(response => {
-            // updateIsLoading(false);
             return response.json();
         }).then(responseData => {
-            console.log("Data Received");
             httpDispatch({type:'RESPONSE', data:responseData});
             responseHandler(responseData);
         }).catch(error=>{
